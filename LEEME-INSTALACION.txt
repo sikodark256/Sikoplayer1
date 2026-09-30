@@ -1,94 +1,80 @@
 ==========================================================
-   SIKODARK RADIO — PWA CORREGIDA
+   SIKODARK RADIO — PWA CORREGIDA v5
    ¿Qué estaba mal y qué se arregló?
 ==========================================================
 
-⚠️  PROBLEMA 1: No se podía instalar la PWA (no aparecía
-   como app real, seguía abriéndose en Chrome)
+⚠️  LO QUE VISTE EN TU CELULAR NO ES UN ERROR
    -------------------------------------------------
-   CAUSA: El archivo manifest.json declaraba que
-   apple-icon.png era de 192x192, pero en realidad
-   era de 180x180. Chrome EXIGE que el tamaño declarado
-   coincida con el tamaño real de la imagen. Al no
-   coincidir, Chrome rechazaba el ícono y NO cumplía
-   los requisitos para instalar la PWA.
+   El cartel "¿Desea añadir a la pantalla de inicio?"
+   con el botón "Añadir" ES la instalación de la PWA.
+   No es un mero "acceso directo" — en Android, las PWA
+   se instalan exactamente así. Tocá "Añadir" y listo.
 
-   También faltaban íconos "maskable" de 192px (obligatorios
-   en Android moderno) y el Service Worker no cacheaba
-   los íconos nuevos.
-
-   ✅ REPARADO:
-   - icon-192.png → 192x192 real (generado del logo original)
-   - icon-512.png → 512x512 real
-   - icon-192-maskable.png + icon-512-maskable.png → nuevos,
-     con el padding seguro para que Android no recorte el logo
-   - manifest.json corregido con los 4 íconos correctos
-   - sw.js ahora cachea todos los íconos (versión v4)
+   Si después de tocar "Añadir" la app sigue abriéndose
+   con la barra de Chrome, el problema es CACHÉ VIEJO:
+   el service worker antiguo sigue sirviendo la versión
+   vieja. Esta nueva versión (v5) se limpia sola.
 
 
-⚠️  PROBLEMA 2: En la notificación salía "Chrome sikodar..."
-   y un ícono genérico (ojo/estrella), no tu logo ni nombre
+⚠️  PROBLEMA 1: No se instalaba como app real
    -------------------------------------------------
-   CAUSA: Esto pasa SIEMPRE que la PWA NO está instalada.
-   Cuando reproducís audio desde una pestaña normal de
-   Chrome, la notificación del sistema muestra:
-     "Chrome" + <título de la página>
-   y usa un ícono genérico porque no tiene el ícono de app.
+   CAUSA: manifest.json declaraba apple-icon.png como
+   192x192 pero era 180x180. Chrome rechaza íconos con
+   tamaño incorrecto → no cumplía requisitos de PWA.
 
-   Además, la función MediaSession usaba rutas relativas
-   y tamaños de artwork incorrectos.
+   ✅ REPARADO: íconos regenerados del ojito original,
+   tamaños exactos 192 y 512, + versiones maskable.
 
-   ✅ REPARADO:
-   - actualizarMediaSession() ahora usa URLs ABSOLUTAS
-   - Múltiples tamaños de artwork (96 a 512px)
-   - Logo de alta resolución dedicado: logo-notificacion.png
-   - Sincroniza el estado play/pausa con la notificación
-   - Una vez instalada la PWA, la notificación mostrará
-     "sikodark" como nombre de app y tu logo como ícono
+
+⚠️  PROBLEMA 2: Notificación mostraba "Chrome" y ojo genérico
+   -------------------------------------------------
+   CAUSA: PWA no instalada → Chrome muestra su propio
+   nombre en la notificación. Además MediaSession usaba
+   rutas relativas.
+
+   ✅ REPARADO: URLs absolutas + logo de alta resolución.
+   Una vez instalada la PWA, la notificación muestra
+   "sikodark" y tu ojito.
 
 
 ==========================================================
-   CÓMO INSTALARLA EN TU CELULAR (pasos exactos)
+   PASOS EXACTOS (hacerlos en orden)
 ==========================================================
 
-1. Subí TODOS estos archivos a tu hosting (misma carpeta).
-   IMPORTANTE: debe ser HTTPS (http:// no permite PWA).
+1. Subí TODOS los archivos a tu hosting (misma carpeta).
+   Verificá que sw.js se suba — si falta, no hay PWA.
 
-2. En tu celular Android, abrí Chrome y entra a la URL.
+2. En tu celular: Chrome → los 3 puntitos ⋮ →
+   "Configuración" → "Privacidad" → "Borrar datos de
+   navegación" → marcá "Cookies y datos de sitios" y
+   "Imágenes y archivos en caché" → Borrar.
+   (Esto elimina el service worker viejo.)
 
-3. Esperá 3-5 segundos. Aparecerá un botón naranja/gris
-   que dice "⇩ Instalar app en mi celular". Tocalo.
+3. Entrá de nuevo a la URL. Verás un panel de
+   diagnóstico (letras chiquitas) que dice:
+   ✅ HTTPS correcto
+   ✅ Service Worker ACTIVO (v5)
+   Si todo dice ✅, la app está lista.
 
-   Si NO aparece el botón: tocá los 3 puntitos ⋮ de Chrome
-   (arriba a la derecha) → buscá "Instalar app" o
-   "Añadir a pantalla de inicio".
+4. Tocá el botón "⇩ Instalar app en mi celular"
+   (o los 3 puntitos ⋮ → "Instalar app").
 
-4. Confirmá la instalación. Se creará un ícono en tu
-   pantalla de inicio con tu logo.
+5. Tocá "Añadir" en el cartel que aparece.
 
-5. CERRÁ Chrome. Abrí la radio DESDE EL ÍCONO NUEVO de la
-   pantalla de inicio (NO desde Chrome). Ahora sí se abrirá
-   como app real, sin barra de direcciones.
+6. CERRÁ Chrome. Abrí desde el ícono nuevo de la
+   pantalla de inicio. Ahora es una app real sin barra.
 
-6. Dale play. La notificación mostrará:
-   - Nombre: sikodark (no "Chrome")
-   - Ícono: tu logo (no el ojo genérico)
-   - Tema y artista actuales
-   - Botones play/pausa funcionales
+7. Dale play → la notificación muestra tu nombre y logo.
 
 
 ==========================================================
    SI SIGUE SIN FUNCIONAR
 ==========================================================
 
-• Limpiá el caché de Chrome (Configuración → Privacidad →
-  Borrar datos de navegación) o usá el botón "🧹 Limpiar
-  caché y recargar" dentro de la app.
+• Mirá el panel de diagnóstico dentro de la app. Si
+  algo dice ❌, ese es el problema.
 
-• Verificá que se accede por HTTPS (el candado 🔒 aparece
-  en la barra de direcciones). Sin HTTPS no hay PWA.
+• Lo más común: sw.js no se subió. Verificá entrando a
+  tu-sitio/sw.js — debe mostrar código, no error 404.
 
-• Si tu web está en una subcarpeta (ej: misitio.com/radio/),
-  los íconos y archivos deben estar en esa misma carpeta.
-
-• En iPhone: Safari → Compartir → "Agregar a inicio".
+• El sitio DEBE ser HTTPS (candado 🔒 en la barra).

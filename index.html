@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <meta name="description" content="Escuchá sikodark radio en directo y descubrí la música que ya sonó.">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.json?v=5">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -105,8 +105,9 @@ footer{color:var(--muted);text-align:center;font:11px var(--mono)}
   box-shadow:0 10px 30px rgba(0,0,0,.5);transition:.25s}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 
-/* ===== 🚫 OCULTOS: notificación Wikipedia, EQ y diagnóstico ===== */
-#smartNotify,#diagnostico,.eq{display:none!important}
+/* ===== 🚫 OCULTOS: notificación Wikipedia y EQ ===== */
+#smartNotify,.eq{display:none!important}
+/* ===== PANEL DE DIAGNÓSTICO (visible para ver estado de la PWA) ===== */
 
 /* ===== PANEL DE DIAGNÓSTICO (oculto, sigue funcionando por dentro) ===== */
 #diagnostico{
@@ -1028,10 +1029,39 @@ if(window.matchMedia("(display-mode: standalone)").matches || window.navigator.s
   log("ok","📲 PWA ya está instalada y corriendo en modo app");
 }
 
-if("serviceWorker" in navigator)window.addEventListener("load",()=>{
-  navigator.serviceWorker.register("sw.js")
+if("serviceWorker" in navigator)window.addEventListener("load",async ()=>{
+  try{
+    /* 🧹 LIMPIEZA TOTAL: desregistra service workers viejos (v3, v6, etc.)
+       y borra cachés antiguos para que no sigan sirviendo la versión vieja */
+    const regs = await navigator.serviceWorker.getRegistrations();
+    let limpioAlgo = false;
+    for(const r of regs){
+      if(r.active && r.active.scriptURL.includes("sw.js")){
+        /* Si hay un SW activo, lo dejamos pero forzamos update */
+        r.update();
+      } else {
+        await r.unregister();
+        limpioAlgo = true;
+      }
+    }
+    if(limpioAlgo){
+      log("warn","🧹 SW viejo detectado y eliminado — recargando...");
+      window.location.reload();
+      return;
+    }
+    /* Borrar cachés que no sean la versión actual */
+    if(window.caches){
+      const keys = await caches.keys();
+      for(const k of keys){
+        if(k !== "sikodark-v4"){ await caches.delete(k); limpioAlgo=true; }
+      }
+    }
+    if(limpioAlgo){ window.location.reload(); return; }
+  }catch(e){ log("err","Limpieza SW: "+e.message); }
+
+  navigator.serviceWorker.register("sw.js?v=5")
     .then(reg => {
-      log("ok", "Service Worker registrado (v4)");
+      log("ok", "✅ Service Worker ACTIVO (v5) — la app se puede instalar");
       reg.addEventListener("updatefound", () => {
         const nuevoSW = reg.installing;
         nuevoSW.addEventListener("statechange", () => {
@@ -1042,7 +1072,7 @@ if("serviceWorker" in navigator)window.addEventListener("load",()=>{
       });
       setInterval(() => reg.update(), 30000);
     })
-    .catch(err => log("err", "Service Worker: " + err.message));
+    .catch(err => log("err", "❌ Service Worker NO cargó: " + err.message + " — revisá que sw.js esté subido"));
 });
 
 /* =========================================================
@@ -1053,7 +1083,20 @@ renderHistory();
 pedirPermisoNotificaciones();
 conectarMetadata();
 
-console.log("🧠 Sikodark Radio v16 — avisos + presencia + offline propio + 6 respaldos");
+/* ===== 📲 CHEQUEO VISIBLE del estado PWA (para que veas qué falta) ===== */
+setTimeout(()=>{
+  const esHTTPS = location.protocol === "https:" || location.hostname === "localhost";
+  const swSoportado = "serviceWorker" in navigator;
+  const manifestOk = !!document.querySelector('link[rel="manifest"]');
+  log(esHTTPS?"ok":"err", esHTTPS ? "✅ HTTPS correcto (requisito PWA)" : "❌ NO es HTTPS — la PWA NO se puede instalar");
+  log(swSoportado?"ok":"err", swSoportado ? "✅ Service Worker soportado" : "❌ Service Worker no soportado");
+  log(manifestOk?"ok":"err", manifestOk ? "✅ Manifest enlazado" : "❌ Manifest no encontrado");
+  if(esHTTPS && swSoportado && manifestOk){
+    log("info","📲 Si el botón 'Instalar app' no aparece, tocá los 3 puntitos ⋮ de Chrome → 'Instalar app'");
+  }
+},1500);
+
+console.log("🧠 Sikodark Radio v17 — PWA reparada + diagnóstico visible");
 </script>
 
 <!-- ===== 📊 SEGUIMIENTO DE OYENTES + 🔔 PUSH — Firebase ===== -->

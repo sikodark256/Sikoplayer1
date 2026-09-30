@@ -2,7 +2,7 @@
    sikodark radio — Service Worker v4
    Cachea la app + página offline propia (adiós dinosaurio de Chrome)
    ========================================================= */
-const CACHE = 'sikodark-v4';
+const CACHE = 'sikodark-v5';
 const ASSETS = [
   './',
   './index.html',
